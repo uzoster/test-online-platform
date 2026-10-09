@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Online Test — testni tuzing, havolani yuboring</title>
+  <meta name="description" content="Testni yarating yoki Excel'dan yuklang, havolani guruhga yuboring va natijalarni real vaqtda kuzating.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%232440a6'/%3E%3Ccircle cx='27.5' cy='13' r='4.5' fill='%23ffc83a'/%3E%3Ccircle cx='12.5' cy='27' r='4.5' fill='%23ffc83a'/%3E%3Ccircle cx='12.5' cy='13' r='4' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Ccircle cx='27.5' cy='27' r='4' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+  <button class="btn btn-ghost btn-icon theme-fab" type="button" id="theme-btn" aria-label="Mavzuni almashtirish"></button>
+
+  <div class="auth-wrap">
+    <section class="auth-art" aria-label="Platforma haqida">
+      <a class="brand" href="/" id="brand"></a>
+      <div>
+        <h1>Testni tuzing, havolani yuboring, natijani kuzating.</h1>
+        <p class="lead">Savollar har bir talabaga boshqacha tartibda beriladi, vaqtni esa server nazorat qiladi. Hisob-kitob avtomatik.</p>
+        <div class="omr" id="omr" aria-hidden="true"></div>
+      </div>
+      <p class="foot">Talabalar uchun ro'yxatdan o'tish shart emas.</p>
+    </section>
+
+    <section class="auth-panel">
+      <div>
+        <h2>Testni topshirish</h2>
+        <p class="sub">O'qituvchingiz yuborgan kodni kiriting.</p>
+        <form class="code-form" id="code-form" style="margin-top:16px" novalidate>
+          <label class="sr-only" for="code">Test kodi</label>
+          <input class="input" id="code" name="code" placeholder="Masalan, 7F82KQ" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button class="btn btn-accent" type="submit">Boshlash</button>
+        </form>
+        <div class="err-box" id="code-err" role="alert" hidden style="margin-top:12px"></div>
+      </div>
+
+      <div class="divider"><span>o'qituvchilar uchun</span></div>
+
+      <div>
+        <h2>Tizimga kirish</h2>
+        <p class="sub" id="login-sub">Test yaratish va natijalarni ko'rish uchun.</p>
+        <div id="already" hidden style="margin-top:16px">
+          <a class="btn btn-primary btn-block btn-lg" href="/teacher">Panelga o'tish</a>
+        </div>
+        <form class="stack" id="login-form" style="margin-top:16px" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input class="input" id="email" name="email" type="email" autocomplete="username" placeholder="admin@test.uz" required>
+          </div>
+          <div class="field">
+            <label for="password">Parol</label>
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="err-box" id="login-err" role="alert" hidden></div>
+          <button class="btn btn-primary btn-block btn-lg" type="submit" id="login-btn">Kirish</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>

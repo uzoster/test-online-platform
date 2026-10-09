@@ -1,0 +1,24 @@
+{
+  "name": "online-test-platform",
+  "version": "1.0.0",
+  "description": "Online Test Platform — Node.js + Express + SQLite + Vanilla JS",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "test": "node --test test/backend.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "multer": "^2.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "license": "MIT",
+  "optionalDependencies": {
+    "better-sqlite3": "^11.3.0"
+  }
+}
