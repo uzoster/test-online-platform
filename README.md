@@ -41,6 +41,17 @@ Parolni **Sozlamalar** sahifasidan darhol o'zgartiring. Boshqa boshlang'ich ma'l
 Havolani boshqa qurilmalardagi talabalarga yuborish uchun serveringiz ularga ko'rinishi (bir tarmoqda yoki internetda)
 va `PUBLIC_URL` to'g'ri berilgan bo'lishi kerak (yoki o'qituvchi panelga shu manzil orqali kirsin).
 
+## AI yordamida test yaratish (Google Gemini)
+
+O'qituvchi mavzuni yozadi — Gemini savollarni (4 variant, bitta to'g'ri javob) o'zi yaratadi.
+
+1. Kalit oling: <https://aistudio.google.com/apikey>
+2. `.env.example` ni `.env` ga nusxalang va kalitni qo'ying: `GEMINI_API_KEY=...`
+3. Serverni qayta ishga tushiring. **Test yaratish** sahifasida *AI yordamida savollar yaratish* bloki paydo bo'ladi.
+
+Kalit faqat serverda turadi (brauzerga yuborilmaydi), `.env` esa `.gitignore`da. Model: `GEMINI_MODEL` (standart `gemini-3.8-flash`).
+Bir so'rovda 30 tagacha savol, o'qituvchiga daqiqasiga 10 ta so'rov. Yaratilgan savollar bazaga yozilmaydi — avval ko'rib chiqiladi.
+
 ## Foydalanish
 
 1. **Kirish** — bosh sahifada email va parol.
@@ -82,7 +93,7 @@ test/          backend.test.js
 
 Himoyalangan (o'qituvchi sessiyasi kerak): `POST /api/auth/login` (ochiq), `GET /api/auth/me`, `PUT /api/auth/profile`,
 `GET|POST /api/tests`, `GET|PUT|DELETE /api/tests/:id`, `POST /api/tests/:id/questions`, `POST /api/tests/upload` (preview),
-`GET /api/tests/template`, `POST /api/tests/:id/publish|unpublish`, `GET /api/tests/:id/results`, `GET /api/tests/:id/results/export`,
+`GET /api/tests/template`, `GET /api/tests/ai-status`, `POST /api/tests/ai-generate`, `POST /api/tests/:id/publish|unpublish`, `GET /api/tests/:id/results`, `GET /api/tests/:id/results/export`,
 `GET /api/tests/:id/analytics`, `GET|DELETE /api/attempts/:id`, `GET /api/stats`.
 
 Ochiq (talaba, test kodi + urinish tokeni): `GET /api/test/:code`, `POST /api/test/:code/start`, `POST …/resume`,
@@ -97,6 +108,13 @@ Ochiq (talaba, test kodi + urinish tokeni): `GET /api/test/:code`, `POST /api/te
   Muddati o'tgan urinishlar server tomonidan avtomatik yakunlanadi.
 - Qayta topshirish bloklangan (ruxsat berilmagan bo'lsa, shu ism-familiya ham qayta boshlay olmaydi).
 - Fayl yuklashda faqat `.xlsx`, 5 MB limit, fayl tarkibi ham tekshiriladi. CSP sarlavhalari yoqilgan.
+
+## Sahifadan chiqishni nazorat qilish
+
+Talaba test vaqtida boshqa oyna/tabga o'tsa, qaytganda **3 martagacha ogohlantiriladi**, **4-marta test avtomatik yakunlanadi**
+(shu paytgacha belgilangan javoblar hisoblanadi). Hisob serverda yuritiladi, sahifani yangilash uni nolga tushirmaydi.
+O'qituvchi natijalar jadvalida va Excel eksportida har bir talabaning chiqishlar sonini ko'radi.
+Cheklov: bu faqat shu brauzer sahifasini kuzatadi — boshqa qurilma (telefon) orqali foydalanishni aniqlab bo'lmaydi.
 
 ## Testlar
 

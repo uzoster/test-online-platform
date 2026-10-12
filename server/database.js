@@ -161,6 +161,13 @@ CREATE INDEX IF NOT EXISTS idx_answers_attempt  ON answers(attempt_id);
 CREATE INDEX IF NOT EXISTS idx_answers_question ON answers(question_id);
 `);
 
+// Eski bazalar uchun yengil migratsiya: sahifadan chiqish ogohlantirishlari
+{
+  const cols = db.prepare('PRAGMA table_info(attempts)').all().map((c) => c.name);
+  if (!cols.includes('violations')) db.exec('ALTER TABLE attempts ADD COLUMN violations INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('last_violation_at')) db.exec('ALTER TABLE attempts ADD COLUMN last_violation_at INTEGER');
+}
+
 /** Birinchi ishga tushirishda standart o'qituvchi yaratish. */
 function seedTeacher() {
   const count = db.prepare('SELECT COUNT(*) AS c FROM teachers').get().c;

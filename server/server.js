@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const express = require('express');
 const session = require('express-session');
 
+require('./lib/env').loadEnv();
 const { seedTeacher, DB_FILE, DATA_DIR, db } = require('./database');
 const { finalizeExpired } = require('./lib/attempts');
 const { requireTeacherPage } = require('./middleware/auth');

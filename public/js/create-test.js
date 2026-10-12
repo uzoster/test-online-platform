@@ -32,6 +32,13 @@
     '<div class="field"><label for="question_count">Talabaga beriladigan savollar soni</label><input class="input" id="question_count" type="number" min="1" placeholder="Hammasi">' +
     '<span class="hint" id="qc-hint">Bo\'sh qoldirsangiz, barcha savollar beriladi.</span></div>' +
     '</div></div></section>' +
+    '<section class="panel" id="ai-panel"><div class="panel-head"><h2>' + icon('sparkle') + ' AI yordamida savollar yaratish</h2></div><div class="panel-body"><div class="form-grid">' +
+    '<div class="field span-2"><label for="ai-topic">Mavzu yoki ko\'rsatma</label><textarea class="textarea" id="ai-topic" rows="3" maxlength="3000" placeholder="Masalan: Present Perfect va Past Simple farqi, 6-sinf darajasi"></textarea></div>' +
+    '<div class="field"><label for="ai-count">Savollar soni</label><input class="input" id="ai-count" type="number" min="1" max="30" value="10"></div>' +
+    '<div class="field"><label for="ai-level">Qiyinlik</label><select class="select" id="ai-level"><option value="mixed">Aralash</option><option value="easy">Oson</option><option value="medium">O\'rta</option><option value="hard">Qiyin</option></select></div>' +
+    '<div class="field"><label for="ai-lang">Til</label><select class="select" id="ai-lang"><option value="uz">O\'zbekcha</option><option value="ru">Ruscha</option><option value="en">Inglizcha</option></select></div>' +
+    '<div class="field"><label>&nbsp;</label><button class="btn btn-primary" type="button" id="ai-go">' + icon('sparkle') + 'AI bilan yaratish</button></div>' +
+    '</div><p class="small muted" id="ai-note" style="margin-top:10px">Yaratilgan savollar pastga qo\'shiladi — e\'lon qilishdan oldin tekshirib, kerak bo\'lsa tahrirlang.</p></div></section>' +
     '<div class="qlist" id="qlist"></div><div class="add-q"><button class="btn" type="button" id="add-q">' + icon('plus') + 'Savol qo\'shish</button></div>' +
     '</div><aside>' +
     '<section class="panel"><div class="panel-head"><h2>Sozlamalar</h2></div><div class="panel-body">' +
@@ -81,6 +88,7 @@
       .join('');
     $('#count').textContent = state.questions.length;
     $('#add-q').hidden = state.locked;
+    $('#ai-panel').hidden = state.locked;
     updateHint();
     if (focusLast) {
       const last = box.lastElementChild;
@@ -263,6 +271,31 @@
     });
     $('#cp', body).addEventListener('click', () => copyWithToast(r.link));
   }));
+
+  /* ---------- AI (Gemini) ---------- */
+  $('#ai-go').addEventListener('click', withLoading($('#ai-go'), async () => {
+    const topic = val('ai-topic').trim();
+    if (topic.length < 3) {
+      $('#ai-topic').focus();
+      throw new Error('Avval mavzuni yozing.');
+    }
+    const r = await api('/api/tests/ai-generate', {
+      method: 'POST',
+      body: { topic, count: Number(val('ai-count')) || 10, difficulty: val('ai-level'), language: val('ai-lang'), subject: val('subject').trim() },
+    });
+    // Boshida turgan bo'sh savol kartasini olib tashlaymiz
+    state.questions = state.questions.filter((q) => q.question.trim() || LETTERS.some((l) => q[l].trim()) || q.correct);
+    const firstNew = state.questions.length;
+    r.questions.forEach((q) => state.questions.push({ question: q.question, A: q.option_a, B: q.option_b, C: q.option_c, D: q.option_d, correct: q.correct_answer }));
+    markDirty();
+    renderQuestions();
+    const card = $$('.qcard')[firstNew];
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast(r.questions.length + ' ta savol yaratildi. Tekshirib chiqing.');
+  }));
+  api('/api/tests/ai-status').then((s) => {
+    if (!s.enabled) $('#ai-note').textContent = 'AI hali sozlanmagan: serverda GEMINI_API_KEY ni (.env faylida) kiriting va serverni qayta ishga tushiring.';
+  }).catch(() => {});
 
   /* ---------- boshlash ---------- */
   if (editId) {

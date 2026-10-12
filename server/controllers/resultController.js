@@ -1,6 +1,6 @@
 'use strict';
 const { db } = require('../database');
-const { finalizeExpired, timeSpentSeconds } = require('../lib/attempts');
+const { finalizeExpired, timeSpentSeconds, MAX_WARNINGS } = require('../lib/attempts');
 const { buildResultsWorkbook } = require('../lib/excel');
 const { HttpError, toInt } = require('../lib/util');
 
@@ -30,6 +30,8 @@ function attemptRow(a) {
     started_at: a.started_at,
     submitted_at: a.submitted_at,
     time_spent: timeSpentSeconds(a),
+    violations: a.violations || 0,
+    cheat_stop: (a.violations || 0) > MAX_WARNINGS,
   };
 }
 
@@ -281,6 +283,7 @@ function exportResults(req, res) {
       total: a.total_questions,
       percentage: a.percentage,
       time: fmtTime(timeSpentSeconds(a)),
+      violations: a.violations || 0,
       submitted: new Date(a.submitted_at).toLocaleString('sv-SE').replace('T', ' '),
     }));
   const buf = buildResultsWorkbook(t.title, rows);

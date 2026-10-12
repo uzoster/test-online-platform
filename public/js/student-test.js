@@ -20,7 +20,7 @@
     },
   };
 
-  const S = { token: null, questions: [], answers: {}, idx: 0, endAt: 0, timerId: null, finishing: false, title: '', retryQueue: new Map() };
+  const S = { token: null, questions: [], answers: {}, idx: 0, endAt: 0, timerId: null, finishing: false, title: '', retryQueue: new Map(), violations: 0, maxWarnings: 3, away: false, pendingWarning: null, cheatStop: false };
 
   /* ---------- ekranlar ---------- */
   function showError(title, text, extra) {
@@ -43,7 +43,8 @@
       '<div class="err-box" id="err" role="alert" hidden></div>' +
       '<button class="btn btn-accent btn-lg btn-block" type="submit" id="go">TESTNI BOSHLASH</button></div>' +
       '<div class="rules"><b>Bilib qo\'ying</b><ul><li>Boshlagandan keyin vaqt to\'xtamaydi.</li><li>Sahifa yangilansa, test davom etadi — vaqt qayta boshlanmaydi.</li>' +
-      '<li>Topshirilgan javoblarni o\'zgartirib bo\'lmaydi.</li></ul></div></form></div>';
+      '<li>Topshirilgan javoblarni o\'zgartirib bo\'lmaydi.</li>' +
+      '<li><b>Test vaqtida boshqa oyna yoki ilovaga o\'tmang.</b> Sahifani tark etsangiz 3 marta ogohlantiriladi, 4-marta test avtomatik yakunlanadi.</li></ul></div></form></div>';
 
     $('#intro').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -78,6 +79,9 @@
     S.endAt = performance.now() + r.remaining * 1000;
     S.title = r.test.title;
     S.finishing = false;
+    S.violations = r.violations || 0;
+    S.maxWarnings = r.max_warnings || 3;
+    S.away = false;
     const firstOpen = S.questions.findIndex((q) => !S.answers[q.id]);
     S.idx = firstOpen < 0 ? 0 : firstOpen;
     document.title = r.test.title + ' — Online test';
@@ -209,7 +213,7 @@
       const m = $('.overlay');
       if (m) m.remove();
       document.body.style.overflow = '';
-      app.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="modal"><div class="modal-head"><h2>Vaqt tugadi!</h2></div><div class="modal-body"><p>Testingiz avtomatik topshirilmoqda…</p></div><div class="modal-foot"></div></div></div>');
+      app.insertAdjacentHTML('beforeend', '<div class="overlay"><div class="modal"><div class="modal-head"><h2>' + (S.cheatStop ? 'Test yakunlanmoqda' : 'Vaqt tugadi!') + '</h2></div><div class="modal-body"><p>' + (S.cheatStop ? 'Siz sahifadan ko\'p marta chiqdingiz. ' : '') + 'Testingiz avtomatik topshirilmoqda…</p></div><div class="modal-foot"></div></div></div>');
     }
     for (let attempt = 0; ; attempt++) {
       try {
@@ -276,9 +280,54 @@
     app.innerHTML =
       '<div class="result-wrap"><section class="panel result-card"><span class="kicker">' + BRAND_MARK + 'TEST YAKUNLANDI</span>' +
       '<p style="margin-top:12px;font-weight:600">' + esc(r.student.surname + ' ' + r.student.name) + ' · ' + esc(r.test.title) + '</p>' +
-      (timeOver ? '<div class="time-over"><b>Vaqt tugadi!</b>Testingiz avtomatik topshirildi.</div>' : '') +
+      (r.cheat_stop || S.cheatStop ? '<div class="time-over"><b>Test yakunlandi!</b>Siz test sahifasidan ' + (S.maxWarnings + 1) + ' marta chiqdingiz, shuning uchun test avtomatik topshirildi.</div>' : timeOver ? '<div class="time-over"><b>Vaqt tugadi!</b>Testingiz avtomatik topshirildi.</div>' : '') +
       inner + '</section>' + review + '</div>';
   }
+
+  /* ---------- sahifadan chiqishni nazorat qilish ---------- */
+  // Bitta chiqish (tab almashtirish) ham `visibilitychange`, ham `blur` beradi — bir marta sanaymiz.
+  function leftPage() {
+    if (!$('#qcard') || S.finishing || S.away) return;
+    S.away = true;
+    S.pendingWarning = null;
+    api('/api/test/' + encodeURIComponent(code) + '/violation', { method: 'POST', body: { token: S.token, answers: S.answers } })
+      .then((r) => {
+        if (r.submitted && !r.terminated) return finish(true);
+        S.violations = r.violations;
+        if (r.terminated) {
+          S.cheatStop = true;
+          return finish(true);
+        }
+        S.pendingWarning = r;
+        if (!S.away) showWarning(); // javob qaytguncha talaba qaytib kelgan bo'lsa
+      })
+      .catch(() => { /* tarmoq xatosi: e'tiborsiz */ });
+  }
+
+  function backOnPage() {
+    if (!S.away) return;
+    S.away = false;
+    if (S.pendingWarning) showWarning();
+  }
+
+  function showWarning() {
+    const r = S.pendingWarning;
+    S.pendingWarning = null;
+    if (!r || S.finishing || $('.overlay')) return;
+    const last = r.warnings_left === 0;
+    openModal({
+      title: 'Ogohlantirish ' + r.violations + ' / ' + S.maxWarnings,
+      body: '<p style="font-size:1.0625rem">Siz test sahifasidan chiqdingiz. Test vaqtida boshqa oyna yoki ilovaga o\'tish mumkin emas.</p>' +
+        '<p style="margin-top:10px;color:var(--' + (last ? 'bad' : 'warn') + ')"><b>' + (last
+          ? 'Bu oxirgi ogohlantirish! Yana bir marta chiqsangiz, test avtomatik yakunlanadi.'
+          : 'Yana ' + r.warnings_left + ' marta chiqsangiz, test avtomatik yakunlanadi.') + '</b></p>',
+      buttons: [{ label: 'Tushundim, testni davom ettiraman', cls: 'btn-primary' }],
+    });
+  }
+
+  document.addEventListener('visibilitychange', () => (document.hidden ? leftPage() : backOnPage()));
+  window.addEventListener('blur', leftPage);
+  window.addEventListener('focus', () => { if (!document.hidden) backOnPage(); });
 
   /* ---------- klaviatura ---------- */
   document.addEventListener('keydown', (e) => {

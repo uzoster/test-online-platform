@@ -45,6 +45,8 @@ function sessionPayload(attempt, test) {
     test: { title: test.title, subject: test.subject, duration: test.duration },
     total: layout.length,
     remaining: A.remainingMs(attempt) / 1000,
+    violations: attempt.violations || 0,
+    max_warnings: A.MAX_WARNINGS,
     questions: A.publicQuestions(layout, qmap),
     answers: A.savedAnswersForClient(attempt.id, layout),
   };
@@ -190,6 +192,43 @@ function submitTest(req, res) {
   res.json({ ...A.buildResultView(fresh, t), time_over: late });
 }
 
+/* ---------- POST /api/test/:code/violation ---------- */
+/** Talaba test sahifasidan chiqdi. Hisob serverda yuritiladi (sahifani yangilash bilan nolga tushmasin). */
+function reportViolation(req, res) {
+  const t = findTest(req.params.code);
+  const attempt = findAttempt(t, req.body && req.body.token);
+  const now = Date.now();
+
+  if (attempt.status === 'submitted') return res.json({ submitted: true, violations: attempt.violations || 0 });
+
+  const current = attempt.violations || 0;
+  if (attempt.last_violation_at && now - attempt.last_violation_at < A.VIOLATION_DEBOUNCE_MS) {
+    return res.json({ violations: current, warnings_left: Math.max(0, A.MAX_WARNINGS - current), terminated: false });
+  }
+
+  const violations = current + 1;
+  db.prepare('UPDATE attempts SET violations = ?, last_violation_at = ? WHERE id = ?').run(violations, now, attempt.id);
+
+  if (violations > A.MAX_WARNINGS) {
+    // Oxirgi javoblarni saqlab, testni yakunlaymiz
+    const answers = req.body && req.body.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
+    if (now <= attempt.deadline_at + A.GRACE_MS) {
+      db.transaction(() => {
+        for (const [qid, letter] of Object.entries(answers)) {
+          try {
+            storeAnswer(attempt, toInt(qid), letter);
+          } catch (_) {
+            /* noto'g'ri savol — e'tiborsiz */
+          }
+        }
+      })();
+    }
+    A.finalizeAttempt(attempt.id, Math.min(now, attempt.deadline_at));
+    return res.json({ violations, warnings_left: 0, terminated: true });
+  }
+  res.json({ violations, warnings_left: A.MAX_WARNINGS - violations, terminated: false });
+}
+
 /* ---------- GET /api/test/:code/result?token= ---------- */
 function getResult(req, res) {
   const t = findTest(req.params.code);
@@ -204,4 +243,4 @@ function getResult(req, res) {
   res.json(A.buildResultView(fresh, t));
 }
 
-module.exports = { getPublicTest, startTest, resumeTest, saveAnswer, submitTest, getResult };
+module.exports = { getPublicTest, startTest, resumeTest, saveAnswer, submitTest, getResult, reportViolation };

@@ -17,6 +17,7 @@ router.get('/:code', wrap(c.getPublicTest));
 router.post('/:code/start', startLimiter, wrap(c.startTest));
 router.post('/:code/resume', wrap(c.resumeTest));
 router.put('/:code/answer', wrap(c.saveAnswer));
+router.post('/:code/violation', wrap(c.reportViolation));
 router.post('/:code/submit', wrap(c.submitTest));
 router.get('/:code/result', wrap(c.getResult));
 

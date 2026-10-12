@@ -380,6 +380,45 @@ test('natijasi bor testning savollarini o‘zgartirib bo‘lmaydi, sozlamalarni 
   assert.equal(ok.json.test.show_correct, true);
 });
 
+test('sahifadan chiqish: 3 ogohlantirish, 4-sida avtomatik yakunlash (hisob serverda)', () => {
+  const st = call(student.startTest, { params: params(), body: { name: 'Chiquvchi', surname: 'Talaba' } });
+  const token = st.json.token;
+  assert.equal(st.json.violations, 0);
+  assert.equal(st.json.max_warnings, 3);
+  const aid = db.prepare('SELECT id FROM attempts WHERE token = ?').get(token).id;
+  const unlock = () => db.prepare('UPDATE attempts SET last_violation_at = last_violation_at - 5000 WHERE id = ?').run(aid);
+
+  const first = call(student.reportViolation, { params: params(), body: { token } });
+  assert.equal(first.json.violations, 1);
+  assert.equal(first.json.warnings_left, 2);
+  // tezkor takroriy signal (tab + blur) ikki marta sanalmaydi
+  assert.equal(call(student.reportViolation, { params: params(), body: { token } }).json.violations, 1);
+
+  unlock();
+  assert.equal(call(student.reportViolation, { params: params(), body: { token } }).json.warnings_left, 1);
+  // sahifa yangilansa ham hisob saqlanadi
+  assert.equal(call(student.resumeTest, { params: params(), body: { token } }).json.violations, 2);
+  unlock();
+  const third = call(student.reportViolation, { params: params(), body: { token } });
+  assert.equal(third.json.violations, 3);
+  assert.equal(third.json.terminated, false);
+  assert.equal(db.prepare('SELECT status FROM attempts WHERE id = ?').get(aid).status, 'in_progress');
+
+  unlock();
+  const q = st.json.questions[0];
+  const fourth = call(student.reportViolation, { params: params(), body: { token, answers: { [q.id]: 'A' } } });
+  assert.equal(fourth.json.terminated, true);
+  const row = db.prepare('SELECT status, violations FROM attempts WHERE id = ?').get(aid);
+  assert.equal(row.status, 'submitted');
+  assert.equal(row.violations, 4);
+  assert.equal(db.prepare('SELECT selected_answer FROM answers WHERE attempt_id = ? AND question_id = ?').get(aid, q.id).selected_answer !== null, true);
+
+  const result = call(student.getResult, { params: params(), query: { token } });
+  assert.equal(result.json.cheat_stop, true);
+  // yakunlangandan keyin yana chaqirilsa hech narsa buzilmaydi
+  assert.equal(call(student.reportViolation, { params: params(), body: { token } }).json.submitted, true);
+});
+
 test('studentni va testni o‘chirish bog‘langan ma‘lumotlarni tozalaydi', () => {
   const t = call(tests.createTest, { body: { title: 'Del', questions: questions(2) } }).json.test;
   const cd = call(tests.publishTest, { params: { id: t.id } }).json.test_code;

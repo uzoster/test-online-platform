@@ -171,10 +171,10 @@ function buildTemplate() {
 
 function buildResultsWorkbook(testTitle, rows) {
   const XLSX = require('xlsx');
-  const aoa = [['№', 'Familiya', 'Ism', "To'g'ri", 'Jami', 'Foiz (%)', 'Vaqt (daq:son)', 'Topshirilgan']];
-  rows.forEach((r, i) => aoa.push([i + 1, r.surname, r.name, r.score, r.total, r.percentage, r.time, r.submitted]));
+  const aoa = [['№', 'Familiya', 'Ism', "To'g'ri", 'Jami', 'Foiz (%)', 'Vaqt (daq:son)', 'Sahifadan chiqish', 'Topshirilgan']];
+  rows.forEach((r, i) => aoa.push([i + 1, r.surname, r.name, r.score, r.total, r.percentage, r.time, r.violations || 0, r.submitted]));
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{ wch: 5 }, { wch: 22 }, { wch: 22 }, { wch: 9 }, { wch: 7 }, { wch: 10 }, { wch: 14 }, { wch: 20 }];
+  ws['!cols'] = [{ wch: 5 }, { wch: 22 }, { wch: 22 }, { wch: 9 }, { wch: 7 }, { wch: 10 }, { wch: 14 }, { wch: 16 }, { wch: 20 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Natijalar');
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });

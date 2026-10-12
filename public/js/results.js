@@ -70,7 +70,7 @@
       rows.map((a, i) => {
         const done = a.status === 'submitted';
         return '<tr' + (done ? ' class="clickable"' : '') + ' data-id="' + a.id + '"><td class="num muted" data-label="#">' + (i + 1) + '</td>' +
-          '<td data-label="Talaba"><span class="name">' + esc(a.student_surname + ' ' + a.student_name) + '</span></td>' +
+          '<td data-label="Talaba"><span class="name">' + esc(a.student_surname + ' ' + a.student_name) + '</span>' + (a.violations ? ' <span class="badge ' + (a.cheat_stop ? 'bad' : 'warn') + ' plain" title="Test sahifasidan chiqqan">' + (a.cheat_stop ? 'Chiqish tufayli yakunlangan · ' : 'Chiqdi: ') + a.violations + ' marta</span>' : '') + '</td>' +
           (done
             ? '<td class="num" data-label="Natija"><b>' + a.score + '/' + a.total_questions + '</b></td>' +
               '<td data-label="Foiz"><div class="pct-cell"><div class="bar ' + tone(a.percentage) + '"><span style="width:' + a.percentage + '%"></span></div><b>' + Math.round(a.percentage) + '%</b></div></td>' +
@@ -92,7 +92,7 @@
     body.innerHTML =
       '<div class="detail-head"><span class="detail-score num" style="color:var(--' + tone(a.percentage) + ')">' + a.score + '/' + a.total_questions + '</span>' +
       '<div><div class="row wrap"><span class="badge ok plain">To\'g\'ri: ' + a.score + '</span><span class="badge bad plain">Xato: ' + a.wrong + '</span><span class="badge gray plain">Javobsiz: ' + a.unanswered + '</span></div>' +
-      '<p class="small muted" style="margin-top:6px">Foiz: <b>' + Math.round(a.percentage) + '%</b> · Vaqt: <b>' + mmss(a.time_spent) + '</b> · ' + fmtDate(a.submitted_at) + '</p></div></div>' +
+      '<p class="small muted" style="margin-top:6px">Foiz: <b>' + Math.round(a.percentage) + '%</b> · Vaqt: <b>' + mmss(a.time_spent) + '</b> · ' + fmtDate(a.submitted_at) + (a.violations ? ' · <b style="color:var(--' + (a.cheat_stop ? 'bad' : 'warn') + ')">Sahifadan chiqqan: ' + a.violations + ' marta' + (a.cheat_stop ? ' (avtomatik yakunlangan)' : '') + '</b>' : '') + '</p></div></div>' +
       r.questions.map((q) => {
         const cls = q.is_correct ? '' : q.selected ? ' wrong' : ' blank';
         return '<div class="dq' + cls + '"><span class="mark">' + icon(q.is_correct ? 'check' : q.selected ? 'x' : 'pause') + '</span><div>' +

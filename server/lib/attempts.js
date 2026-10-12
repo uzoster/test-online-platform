@@ -11,6 +11,8 @@ const { db } = require('../database');
 const { LETTERS, shuffle, pct } = require('./util');
 
 const GRACE_MS = 5000; // tarmoq kechikishi uchun qo'shimcha vaqt
+const MAX_WARNINGS = 3; // sahifadan chiqish: 3 ogohlantirish, 4-sida test avtomatik yakunlanadi
+const VIOLATION_DEBOUNCE_MS = 1000; // bir chiqish ikki marta sanalmasin
 
 const OPT_COL = { A: 'option_a', B: 'option_b', C: 'option_c', D: 'option_d' };
 
@@ -138,6 +140,8 @@ function buildResultView(attempt, test) {
     time_spent: timeSpentSeconds(attempt),
     show_result: !!test.show_result,
     show_correct: !!test.show_correct,
+    violations: attempt.violations || 0,
+    cheat_stop: (attempt.violations || 0) > MAX_WARNINGS,
   };
   if (!test.show_result) return base;
 
@@ -184,6 +188,8 @@ function buildResultView(attempt, test) {
 
 module.exports = {
   GRACE_MS,
+  MAX_WARNINGS,
+  VIOLATION_DEBOUNCE_MS,
   OPT_COL,
   buildLayout,
   loadQuestionsMap,

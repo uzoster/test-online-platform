@@ -2,6 +2,7 @@
 const { db } = require('../database');
 const { finalizeExpired } = require('../lib/attempts');
 const { readQuestions, buildTemplate, looksLikeXlsx } = require('../lib/excel');
+const gemini = require('../lib/gemini');
 const { LETTERS, HttpError, cleanText, cleanMultiline, toInt, toBool, makeCode } = require('../lib/util');
 
 const MAX_QUESTIONS = 1000;
@@ -282,7 +283,29 @@ function downloadTemplate(req, res) {
   res.send(buf);
 }
 
+function aiStatus(req, res) {
+  res.json({ enabled: gemini.isConfigured(), max_count: gemini.MAX_PER_REQUEST });
+}
+
+/** O'qituvchi mavzusi bo'yicha Gemini savollar yaratadi (bazaga yozmaydi — ko'rib chiqish uchun qaytaradi). */
+async function aiGenerate(req, res) {
+  const b = req.body || {};
+  const topic = cleanMultiline(b.topic, 3000);
+  if (topic.length < 3) throw new HttpError(400, 'Mavzuni yozing (kamida bir necha so\'z).');
+  const count = toInt(b.count, 10);
+  if (count < 1 || count > gemini.MAX_PER_REQUEST) {
+    throw new HttpError(400, `Savollar soni 1 dan ${gemini.MAX_PER_REQUEST} gacha bo'lishi kerak.`);
+  }
+  const difficulty = gemini.LEVELS[b.difficulty] ? b.difficulty : 'mixed';
+  const language = gemini.LANGS[b.language] ? b.language : 'uz';
+  const questions = await gemini.generateQuestions({
+    topic, count, difficulty, language, subject: cleanText(b.subject, 100),
+  });
+  res.json({ questions, requested: count });
+}
+
 module.exports = {
+  aiStatus, aiGenerate,
   listTests, getTest, createTest, updateTest, deleteTest, addQuestions,
   publishTest, unpublishTest, uploadPreview, downloadTemplate,
   // testlar uchun

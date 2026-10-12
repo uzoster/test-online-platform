@@ -24,7 +24,8 @@ function errorHandler(err, req, res, next) {
     message = "So'rov hajmi juda katta.";
   }
 
-  if (status >= 500) {
+  if (status >= 500 && !(err instanceof HttpError)) {
+    // Kutilmagan xato: tafsilotni foydalanuvchiga ko'rsatmaymiz
     console.error('[xato]', req.method, req.originalUrl, err);
     message = 'Serverda ichki xatolik yuz berdi.';
   }
